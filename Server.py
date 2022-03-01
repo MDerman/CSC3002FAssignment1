@@ -6,15 +6,16 @@ from threading import Thread
 def processMessage(msg, clientAddress):
 
     if clientAddress not in clients.keys():
-        client_name = "Client " + str(len(clients))
-        clients[clientAddress] = client_name
-
-        # if we are logging in - currently assuming that the client types /login in the first msg they send
-        if login_cmd in msg[0:len(login_cmd)]:
-            client_name = (msg.replace(login_cmd + ' ', '')).split(" ")[0]
+        if login_cmd not in msg[0:len(login_cmd)]:
+            unicast_msg("Welcome! Don't forget to login to receive direct messages!", clientAddress)
+            client_name = "Client " + str(len(clients))
             clients[clientAddress] = client_name
-            join_msg = f'Welcome {client_name}.\nType \"/exit\" to exit.'
-            broadcast_msg(join_msg, client_name)
+
+    if login_cmd in msg[0:len(login_cmd)]:
+        client_name = (msg.replace(login_cmd + ' ', '')).split(" ")[0]
+        clients[clientAddress] = client_name
+        join_msg = f'Welcome {client_name}!'
+        unicast_msg(join_msg, clientAddress)
 
     # if we are ending the session we need to remove the socket instance
     if msg == exit_cmd:
@@ -22,7 +23,7 @@ def processMessage(msg, clientAddress):
         unicast_msg('You are leaving the room...', clientAddress)
         client_name = clients[clientAddress]
         del clients[clientAddress]
-        broadcast_msg(f'{client_name} has left the room!', client_name)
+        broadcast_msg(f'{client_name} has left the room!', clientAddress)
 
     # are we unicasting or broadcasting
     elif '@' in msg[0]:
@@ -37,20 +38,21 @@ def processMessage(msg, clientAddress):
             print("An error occurred.")
 
         unicast_msg(msg, RecipientAddress)
-        unicast_msg(msg, clientAddress)
+        unicast_msg(CONFIRMATIONMSGWHERECLIENTDOESNTPRINT, clientAddress)
         print(msg)
     else:
         broadcast_msg(msg, clientAddress)
 
-
 def broadcast_msg(msg, clientAddress):
+    #here I use clientAddress to be the one who sent the message to be broadcast
+    #or the one user who doesn't need to see the broadcast - so this is technically
+    #not used a "true broadcast"
     print(msg)
     for client in clients:
         if (clientAddress != client):
             serverSocket.sendto(msg.encode(), client)
         else:
-            #serverSocket.sendto("$MR", client)
-
+            unicast_msg(CONFIRMATIONMSGWHERECLIENTDOESNTPRINT, client)
 
 def unicast_msg(msg, client):
     serverSocket.sendto(msg.encode(), client)
@@ -59,25 +61,24 @@ def check_for_client_connections(serverSocket, bufferSize):
     while True:
         msg, clientAddress = serverSocket.recvfrom(bufferSize)
         processMessage(msg.decode(), clientAddress)
-        #if (msg is not None) and (clients(clientAddress) is None):
-        #   Thread(target=processMessage, args=(msg.decode(), clientAddress)).start()
 
 
 if __name__ == "__main__":
-    #run this in cmd to start a local http server
-    #python -m http.server 13370
+
     clients = {}
     port = 13370
     bufferSize = 2048
 
     exit_cmd = "/exit"
     login_cmd = "/login"
+    CONFIRMATIONMSGWHERECLIENTDOESNTPRINT = "CONFIRMATIONMSGWHERECLIENTDOESNTPRINT"
 
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(("", port))
     print("Waiting for connections...")
 
     check_for_client_connections(serverSocket, bufferSize)
+
     #this prevents:
     #ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
     # try:

@@ -5,6 +5,13 @@ open udp port 13370 for incoming connections on your laptop
 open cmd, type python -m http.server 13370 (that's just the port im using but ja)
 then start the server.py, and type shit in client.py 
 
+#NOTE
+_**1 - currently when a client sends a message, there HAS to be a response or the whole
+interface freezes.
+2 - every time we receive a message, recv, we might be multiple messages
+behind the one we were meant to receive for that request. So we need to make sure that
+messages can be received and printed independently of the input and receive thread.
+client seems to store and return messages received in the past with recv**_
 
 What the CLI should do/enable:
 -client types in:

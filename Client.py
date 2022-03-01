@@ -1,5 +1,30 @@
 import sys
 from socket import *
+from threading import Thread
+
+# def inputThread(messages_sent):
+#     while True:
+#         message = ""
+#         if (messages_sent == 0):
+#             message = input("Use /login [USERNAME] to login\n")
+#             messages_sent += 1
+#         else:
+#             messages_sent += 1
+#             message = input()
+#         if message == exit_cmd:
+#             break
+#         if message != "":
+#             clientSocket.sendto(message.encode(), address)
+
+# def update_messages(bufferSize, clientSocket):
+#     listeningSocket = socket(AF_INET, SOCK_DGRAM)
+#     listeningSocket.bind(("", port))
+#     while True:
+#         returnMsg, serverAddress = clientSocket.recvfrom(bufferSize)
+#         if returnMsg != "":
+#             print(returnMsg.decode())
+#         if message == exit_cmd:
+#             break
 
 if __name__ == "__main__":
 
@@ -11,22 +36,28 @@ if __name__ == "__main__":
     exit_cmd = "/exit"
 
     messages_sent = 0
-    while True:
-        try:
-            if (messages_sent == 0):
-                message = input("Use /login [USERNAME] to login\n")
-                messages_sent += 1
-            else:
-                messages_sent += 1
-                message = input()
-            clientSocket.sendto(message.encode(), address)
-            #sys.sleep(1)
-            returnMsg, serverAddress = clientSocket.recvfrom(bufferSize)
-            if returnMsg != "":
-                print(returnMsg.decode())
-            if message == exit_cmd:
-                break
-        except:
-            print("Chat server is offline.")
+    #Thread(target=inputThread, args=(messages_sent,)).start()
 
-    clientSocket.close()
+    while True:
+        message = ""
+        if (messages_sent == 0):
+            message = input('Welcome to the chat!\nType \"/login\ '
+                            '[USERNAME]\" to login.\nType \"/exit\" to exit.\nUse @[USERNAME] to send a direct message.\n')
+            messages_sent += 1
+        else:
+            messages_sent += 1
+            message = input()
+        if message == exit_cmd:
+            break
+        if message != "":
+            try:
+                clientSocket.sendto(message.encode(), address)
+                returnMsg, serverAddress = clientSocket.recvfrom(bufferSize)
+                if returnMsg != "":
+                    print(returnMsg.decode())
+            except:
+               print("Chat server is offline.")
+            #clientSocket.close()
+            #clientSocket = socket(AF_INET, SOCK_DGRAM)
+
+
