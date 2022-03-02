@@ -98,7 +98,6 @@ if __name__ == "__main__":
 
     exit_cmd = "/exit"
     login_cmd = "/login"
-    CONFIRMATIONMSGWHERECLIENTDOESNTPRINT = "CONFIRMATIONMSGWHERECLIENTDOESNTPRINT"
 
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(("", port))
