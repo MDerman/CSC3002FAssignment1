@@ -31,9 +31,11 @@ e.g. "fjaslf jsldf"
 
 
 PROTOCOL STUFF - 
-idk how they want this. we can either include it this stuff in the message
-body and then parse the string, or we could actually add header info using 
-dictionaries / json 
+i am tracking whether messages are received by the server - not whether they are delivered
+-we should only ever get one response for a message sent a server
+
+also i am using the hash incorrectly (probably) - i am just hashing the message part of the packet and then sending that to the
+server and from the server back to the client and seeing if that matches. not hashing the whole packet or whatever
 
 to do:
 -msg count per client - client must send msg number and server must always send back a
@@ -41,6 +43,8 @@ response to the client saying it has received that msg number. client instance k
 sent (storing the: server address, msg, time, and whether it was received or not)
 the next time a client sends a message that is received by the server, we then go through all the unsent
 messages and send them again.
+
+SERVER CRASHES WHEN CLIENT CONNECTS AGAIN
 
 server has similar array/db: sender, receiver, msg, time, received?, type (broad/uni cast)
 
