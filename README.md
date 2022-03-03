@@ -49,3 +49,6 @@ SERVER CRASHES WHEN CLIENT CONNECTS AGAIN
 server has similar array/db: sender, receiver, msg, time, received?, type (broad/uni cast)
 
 don't worry about encryption
+
+
+
