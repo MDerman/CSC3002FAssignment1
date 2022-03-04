@@ -19,7 +19,7 @@ def processMessage(data, clientAddress):
     if login_cmd in msg[0:len(login_cmd)]:
         client_name = (msg.replace(login_cmd + ' ', '')).split(" ")[0]
         clients[clientAddress] = client_name
-        join_msg = 'Welcome {client_name}!'
+        join_msg = 'Welcome {}!'.format(client_name)
         unicast_msg(header, join_msg, clientAddress)
 
     if msg == exit_cmd:

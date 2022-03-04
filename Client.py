@@ -12,23 +12,28 @@ import json
 def receive_messages_from_server():
     while True:
         global clientSocket
-        bytesmessage, serverAddress = clientSocket.recvfrom(bufferSize)
-        # get header and message
-        bytesmessage = str(base64.b64decode(bytesmessage))
-        dictString, bytesmessage = bytesmessage.split('<END>', 2)
-        dictString = dictString[2:]
-        message = bytesmessage[:-1]
-        header = json.loads((dictString.replace("'", "\"")))
+        bytesmessage = ""
+        serverAddress = ""
+        try:
+            bytesmessage, serverAddress = clientSocket.recvfrom(bufferSize)
+            # get header and message
+            bytesmessage = str(base64.b64decode(bytesmessage))
+            dictString, bytesmessage = bytesmessage.split('<END>', 2)
+            dictString = dictString[2:]
+            message = bytesmessage[:-1]
+            header = json.loads((dictString.replace("'", "\"")))
 
-        if message != 'CONFIRMATION':
-            print("["+str(header.get("SentTime")) + "] " + message)
-        else:
-            if len(messages_being_sent) > 0:
-                for i in messages_being_sent:
-                    if header == messages_being_sent[i]:
-                        messages_received.append(header)
-                    else:
-                        return False
+            if message != 'CONFIRMATION':
+                print("["+str(header.get("SentTime")) + "] " + message)
+            else:
+                if len(messages_being_sent) > 0:
+                    for i in messages_being_sent:
+                        if header == messages_being_sent[i]:
+                            messages_received.append(header)
+                        else:
+                            return False
+        except:
+            time.sleep(0.01)
 
 def get_header(msg):
     time = datetime.now()
