@@ -34,7 +34,7 @@ def processMessage(data, clientAddress):
         try:
             recepientName, msg = msg[1:].split(' ', 1)
             try:
-                RecipientAddress = clients.get(recepientName)
+                RecipientAddress = clients(recepientName)
             except:
                 errormsg = recepientName + " not found. Please make sure you have entered the username correctly."
                 unicast_msg(header, errormsg, clientAddress)
