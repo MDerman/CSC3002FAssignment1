@@ -22,7 +22,6 @@ def processMessage(data, clientAddress):
         join_msg = 'Welcome {client_name}!'
         unicast_msg(header, join_msg, clientAddress)
 
-    # if we are ending the session we need to remove the socket instance
     if msg == exit_cmd:
         print(f'{clients[clientAddress]} has disconnected ')
         unicast_msg(header, 'You are leaving the room...', clientAddress)
@@ -47,9 +46,7 @@ def processMessage(data, clientAddress):
     else:
         broadcast_msg(header, msg, clientAddress)
 
-def parse_message_from_client(client):
-    bytesmessage, serverAddress = serverSocket.recvfrom(bufferSize)
-
+def parse_message_from_client(bytesmessage, client):
     #get header and message
     bytesmessage = str(base64.b64decode(bytesmessage))
     dictString, bytesmessage = bytesmessage.split('<END>', 2)
@@ -75,10 +72,10 @@ def broadcast_msg(header, msg, clientAddress):
     #here I use clientAddress to be the one who sent the message to be broadcast
     #or the one user who doesn't need to see the broadcast - so this is technically
     #not used a "true broadcast"
-    bytesmsg = make_message(header, msg)
+    print(msg)
     for client in clients:
         if (clientAddress != client):
-            unicast_msg(bytesmsg, client)
+            unicast_msg(header, msg, client)
 
 def unicast_msg(header, msg, client):
     bytesmsg = make_message(header, msg)
@@ -87,12 +84,14 @@ def unicast_msg(header, msg, client):
 def check_for_client_connections(serverSocket, bufferSize):
     while True:
         msg, clientAddress = serverSocket.recvfrom(bufferSize)
-        processMessage(parse_message_from_client(clientAddress), clientAddress)
+        processMessage(parse_message_from_client(msg, clientAddress), clientAddress)
 
 if __name__ == "__main__":
 
     clients = {}
     receivedMessages = []
+
+
     port = 13370
     bufferSize = 2048
 

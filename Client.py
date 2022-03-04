@@ -5,12 +5,13 @@ import select
 import sys
 import time
 from socket import *
-from threading import Thread
+from threading import Thread, Lock
 import json
 
 
 def receive_messages_from_server():
     while True:
+        global clientSocket
         bytesmessage, serverAddress = clientSocket.recvfrom(bufferSize)
         # get header and message
         bytesmessage = str(base64.b64decode(bytesmessage))
@@ -20,13 +21,14 @@ def receive_messages_from_server():
         header = json.loads((dictString.replace("'", "\"")))
 
         if message != 'CONFIRMATION':
-            print("["+str(header("SentTime")) + "] " + message)
+            print("["+str(header.get("SentTime")) + "] " + message)
         else:
-            for i in messages_sent:
-                if header == messages_sent[i]:
-                    messages_received.append(header)
-                else:
-                    return False
+            if len(messages_being_sent) > 0:
+                for i in messages_being_sent:
+                    if header == messages_being_sent[i]:
+                        messages_received.append(header)
+                    else:
+                        return False
 
 def get_header(msg):
     time = datetime.now()
@@ -58,7 +60,6 @@ def send_messages():
 if __name__ == "__main__":
 
     messages_being_sent = []
-    messages_sent = []
     messages_received = []
 
     server = '127.0.0.1'
@@ -70,7 +71,7 @@ if __name__ == "__main__":
     exit_cmd = "/exit"
     messages_sent = 0
     Thread(target=receive_messages_from_server, args=()).start()
-    Thread(target=send_messages, args=()).start()
+    #Thread(target=send_messages, args=()).start()
 
     while True:
         message = ""
@@ -88,5 +89,5 @@ if __name__ == "__main__":
                 header = get_header(message)
                 send_msg(message, address)
             except:
-                messages_being_sent.append(header, message)
+                messages_being_sent.append((header, message))
                 print("Chat server is offline. Message not sent.")
