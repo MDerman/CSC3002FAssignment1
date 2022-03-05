@@ -27,8 +27,10 @@ def receive_messages_from_server():
             dictString = dictString[2:]
             message = bytesmessage[:-1]
             header = json.loads((dictString.replace("'", "\"")))
-
-            if message != 'CONFIRMATION':
+            if message == 'You are leaving the room...':
+                print("You have left")
+                return False
+            elif  message != 'CONFIRMATION':
                 print("["+str(header.get("SentTime")) + "] " + message)
             else:
                 if len(messages_being_sent) > 0:
@@ -82,7 +84,8 @@ if __name__ == "__main__":
     clientSocket.setblocking(True)
     exit_cmd = "/exit"
     messages_sent = 0
-    Thread(target=receive_messages_from_server, args=()).start()
+    th = Thread(target=receive_messages_from_server, args=())
+    th.start()
     #Thread(target=send_messages, args=()).start()
 
     while True:
@@ -95,10 +98,15 @@ if __name__ == "__main__":
             messages_sent += 1
             message = input()
         if message == exit_cmd:
-            break
+            header = get_header(message)
+            send_msg(message, address)
+            print('You are leaving the room...')
+            th.join()
+            sys.exit()
         if message != "":
             try:
                 header = get_header(message)
                 send_msg(message, address)
             except:
                 print("Chat server is offline. Message not sent.")
+    

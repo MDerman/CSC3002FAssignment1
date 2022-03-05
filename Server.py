@@ -53,7 +53,7 @@ def processMessage(data, clientAddress):
         unicast_msg(get_header(msg), 'You are leaving the room...', clientAddress)
         client_name = clients[clientAddress]
         del clients[clientAddress]
-        broadcast_msg(get_header(msg), f'{client_name} has left the room!', clientAddress)
+        broadcast_msg(get_header(msg), f'{client_name} has left the chat room!', clientAddress)
 
     # are we unicasting or broadcasting
     elif '@' in msg[0]:
