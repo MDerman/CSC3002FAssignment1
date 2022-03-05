@@ -1,4 +1,5 @@
 import base64
+from operator import truediv
 import sys
 from socket import *
 from threading import Thread
@@ -67,9 +68,14 @@ def processMessage(data, clientAddress):
                 unicast_msg(get_header(error_msg), error_msg, clientAddress)
         except:
             print("An error occurred.")
-        msg = "][Direct Message from: "+ clients[clientAddress] + "] " +msg
-        unicast_msg(get_header(msg), msg, RecipientAddress)
-        print(msg)
+
+        if recipient_exists(recipient_name):    
+            msg = "][Direct Message from: "+ clients[clientAddress] + "] " +msg
+            unicast_msg(get_header(msg), msg, RecipientAddress)
+            print(msg)
+        else:
+            msgs = "[Server] The user: "+ recipient_name +" does not exist"
+            unicast_msg(get_header(msg), msgs, clientAddress)
     else:
         msg = "][Broadcast from: "+ clients[clientAddress] + "] " +msg
         print(msg)
@@ -101,6 +107,12 @@ def make_message(header, msg):
     msgbytes = (str(header) + "<END>" + msg)
     msgbytes = base64.b64encode(msgbytes.encode('ascii'))
     return msgbytes
+
+def recipient_exists(name):
+    if is_client_name_taken(name):
+        return True
+    else:
+        return False
 
 def broadcast_msg(header, msg, clientAddress):
     #here I use clientAddress to be the one who sent the message to be broadcast
