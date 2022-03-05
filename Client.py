@@ -27,6 +27,7 @@ def receive_messages_from_server():
             dictString = dictString[2:]
             message = bytesmessage[:-1]
             header = json.loads((dictString.replace("'", "\"")))
+            
             if message == 'You are leaving the room...':
                 print("You have left")
                 return False
@@ -107,6 +108,8 @@ if __name__ == "__main__":
             try:
                 header = get_header(message)
                 send_msg(message, address)
+                message = ""
             except:
                 print("Chat server is offline. Message not sent.")
+            message = ""
     

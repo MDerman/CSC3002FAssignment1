@@ -47,8 +47,9 @@ def processMessage(data, clientAddress):
             clients[clientAddress] = client_name
             join_msg = 'Welcome {}!'.format(client_name)
             unicast_msg(get_header(join_msg), join_msg, clientAddress)
-
-    if msg == exit_cmd:
+            broadcast_msg(get_header(msg), f'{client_name} has just come online!', clientAddress)
+    
+    elif msg == exit_cmd:
         print(f'{clients[clientAddress]} has disconnected ')
         unicast_msg(get_header(msg), 'You are leaving the room...', clientAddress)
         client_name = clients[clientAddress]
