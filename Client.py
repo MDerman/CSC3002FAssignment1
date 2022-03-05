@@ -28,11 +28,11 @@ def receive_messages_from_server():
             message = bytesmessage[:-1]
             header = json.loads((dictString.replace("'", "\"")))
             
-            if message == 'You are leaving the room...':
+            if message == '][Server] You are leaving the room...':
                 print("You have left")
                 return False
             elif  message != 'CONFIRMATION':
-                print("["+str(header.get("SentTime")) + "] " + message)
+                print("["+str(header.get("SentTime"))  + message)
             else:
                 if len(messages_being_sent) > 0:
                     for i in messages_being_sent:
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         if message == exit_cmd:
             header = get_header(message)
             send_msg(message, address)
-            print('You are leaving the room...')
+            print("[Server] You are leaving the room...")
             th.join()
             sys.exit()
         if message != "":
