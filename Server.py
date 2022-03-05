@@ -82,13 +82,15 @@ def parse_message_from_client(bytesmessage, client):
     header = json.loads((dictString.replace("'", "\"")))
 
     #now we confirm
-    send_confirmation_message(header, client)
+    send_confirmation_message(msg, header, client)
 
     #not sure how we will use this yet
     receivedMessages.append(header)
     return header, msg
 
-def send_confirmation_message(header, client):
+def send_confirmation_message(msg, header, client):
+    hash = int(hashlib.sha256(msg.encode('utf-8')).hexdigest(), 16) % 10 ** 8
+    header["Hash"] = hash
     msgbytes = (str(header) + "<END>" + "CONFIRMATION")
     msgbytes = base64.b64encode(msgbytes.encode('ascii'))
     serverSocket.sendto(msgbytes, client)

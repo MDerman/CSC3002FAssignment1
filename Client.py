@@ -8,6 +8,11 @@ from socket import *
 from threading import Thread, Lock
 import json
 
+#@Slaven so now we have messages_being sent being populated whenever we send a message,
+#once confirmation from server is received, we remove the message from messages_being_sent
+#and add it to messages_received. if the actual message was corrupted, then the headers won't match
+#and so it will be as if the message was never received according to the client.
+
 
 def receive_messages_from_server():
     while True:
@@ -30,6 +35,7 @@ def receive_messages_from_server():
                     for i in messages_being_sent:
                         if header == messages_being_sent[i]:
                             messages_received.append(header)
+                            messages_being_sent.pop(i)
                         else:
                             return False
         except:
@@ -50,6 +56,7 @@ def create_bytes_msg(header, msg):
 
 def send_msg_with_header(header, msg, address):
     msgbytes = create_bytes_msg(header, msg)
+    messages_being_sent.append((header, message))
     clientSocket.sendto(msgbytes, address)
 
 def send_msg(msg, address):
@@ -94,5 +101,4 @@ if __name__ == "__main__":
                 header = get_header(message)
                 send_msg(message, address)
             except:
-                messages_being_sent.append((header, message))
                 print("Chat server is offline. Message not sent.")
