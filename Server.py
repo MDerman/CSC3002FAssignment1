@@ -11,7 +11,7 @@ def get_header(msg):
     time = datetime.now()
     hash = int(hashlib.sha256(msg.encode('utf-8')).hexdigest(), 16) % 10 ** 8
     header = {
-        "SentTime": str(time),
+        "SentTime": time.strftime("%m/%d/%Y, %H:%M"),
         "Hash": hash
     }
     return header
@@ -33,11 +33,18 @@ def processMessage(data, clientAddress):
     msg = data[1]
     header = data[0]
 
+  
     if clientAddress not in clients.keys():
-        if login_cmd not in msg[0:len(login_cmd)]:
-            unicast_msg(header, "][Server] Welcome! Don't forget to login to receive direct messages!", clientAddress)
-            client_name = "Client " + str(len(clients))
-            clients[clientAddress] = client_name
+        if (login_cmd not in msg[0:len(login_cmd)]):
+            if (msg != exit_cmd):
+                unicast_msg(header, "][Server] Welcome! Don't forget to login to receive direct messages!", clientAddress)
+                client_name = "Client " + str(len(clients))
+                clients[clientAddress] = client_name
+            else:
+                unicast_msg(header, "][Server] Why leaving so soon?", clientAddress)
+                client_name = "Client " + str(len(clients))
+                clients[clientAddress] = client_name
+
 
     if login_cmd in msg[0:len(login_cmd)]:
         client_name = (msg.replace(login_cmd + ' ', '')).split(" ")[0]
@@ -50,7 +57,7 @@ def processMessage(data, clientAddress):
             unicast_msg(get_header(join_msg), join_msg, clientAddress)
             broadcast_msg(get_header(msg),"][Broadcast from: Server] " +str(client_name)+" has just come online!", clientAddress)
     
-    elif msg == exit_cmd:
+    if msg == exit_cmd:
         print(f'{clients[clientAddress]} has disconnected ')
         unicast_msg(get_header(msg), '][Server] You are leaving the room...', clientAddress)
         client_name = clients[clientAddress]

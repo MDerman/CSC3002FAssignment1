@@ -16,6 +16,7 @@ import json
 
 def receive_messages_from_server():
     while True:
+        global msgs_rec
         global clientSocket
         bytesmessage = ""
         serverAddress = ""
@@ -27,12 +28,14 @@ def receive_messages_from_server():
             dictString = dictString[2:]
             message = bytesmessage[:-1]
             header = json.loads((dictString.replace("'", "\"")))
+            msgs_rec = msgs_rec + 1
             
             if message == '][Server] You are leaving the room...':
+                print("["+ (header.get("SentTime"))  + message)
                 print("You have left")
                 return False
             elif  message != 'CONFIRMATION':
-                print("["+str(header.get("SentTime"))  + message)
+                print("["+ (header.get("SentTime"))  + message)
             else:
                 if len(messages_being_sent) > 0:
                     for i in messages_being_sent:
@@ -48,7 +51,7 @@ def get_header(msg):
     time = datetime.now()
     hash = int(hashlib.sha256(msg.encode('utf-8')).hexdigest(), 16) % 10 ** 8
     header = {
-        "SentTime": str(time),
+        "SentTime": time.strftime("%m/%d/%Y, %H:%M"),
         "Hash": hash
     }
     return header
@@ -74,8 +77,10 @@ def send_messages():
 
 if __name__ == "__main__":
 
+    global msgs_rec
     messages_being_sent = []
     messages_received = []
+    msgs_rec = 0
 
     server = '127.0.0.1'
     port = 13370
@@ -89,8 +94,12 @@ if __name__ == "__main__":
     th.start()
     #Thread(target=send_messages, args=()).start()
 
+    msgs_rec = 0
+    time.sleep(1)
+    print(msgs_rec)
+
     while True:
-        message = ""
+
         if (messages_sent == 0):
             message = input('Welcome to the chat!\nType \"/login\ '
                             '[USERNAME]\" to login.\nType \"/exit\" to exit.\nUse @[USERNAME] to send a direct message.\n')
@@ -101,7 +110,6 @@ if __name__ == "__main__":
         if message == exit_cmd:
             header = get_header(message)
             send_msg(message, address)
-            print("[Server] You are leaving the room...")
             th.join()
             sys.exit()
         if message != "":
@@ -112,4 +120,6 @@ if __name__ == "__main__":
             except:
                 print("Chat server is offline. Message not sent.")
             message = ""
+   
+
     
