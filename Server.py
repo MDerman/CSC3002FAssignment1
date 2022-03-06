@@ -37,7 +37,7 @@ def processMessage(data, clientAddress):
     if clientAddress not in clients.keys():
         if (login_cmd not in msg[0:len(login_cmd)]):
             if (msg != exit_cmd):
-                unicast_msg(header, "][Server] Don't forget to login to receive direct messages!", clientAddress)
+                unicast_msg(header, "[Server] Don't forget to login to receive direct messages!", clientAddress)
                 client_name = "Client " + str(len(clients))
                 clients[clientAddress] = client_name
             else:

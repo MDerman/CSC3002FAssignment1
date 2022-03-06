@@ -92,9 +92,10 @@ if __name__ == "__main__":
     clientSocket.setblocking(True)
     exit_cmd = "/exit"
     messages_sent = 0
-    th = Thread(target=receive_messages_from_server, args=())
-    th.start()
-    #Thread(target=send_messages, args=()).start()
+    receive_thread = Thread(target=receive_messages_from_server, args=())
+    receive_thread.start()
+    send_msg_thread = Thread(target=send_messages, args=())
+    send_msg_thread.start()
 
     message = 'connection established'
     header = get_header(message)
@@ -115,7 +116,7 @@ if __name__ == "__main__":
             if message == exit_cmd:
                 header = get_header(message)
                 send_msg(message, address)
-                th.join()
+                receive_thread.join()
                 sys.exit()
             if message != "":
                 try:
@@ -128,7 +129,8 @@ if __name__ == "__main__":
     else:
         msgs_rec = -1
         print("Unfortunately, you are unable to establish a connection with the server - please try again later")
-        th.join
+        receive_thread.join
+        send_msg_thread.join
         sys.exit()
    
 
