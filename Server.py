@@ -37,7 +37,7 @@ def processMessage(data, clientAddress):
     if clientAddress not in clients.keys():
         if (login_cmd not in msg[0:len(login_cmd)]):
             if (msg != exit_cmd):
-                unicast_msg(header, "][Server] Welcome! Don't forget to login to receive direct messages!", clientAddress)
+                unicast_msg(header, "][Server] Don't forget to login to receive direct messages!", clientAddress)
                 client_name = "Client " + str(len(clients))
                 clients[clientAddress] = client_name
             else:
@@ -45,8 +45,7 @@ def processMessage(data, clientAddress):
                 client_name = "Client " + str(len(clients))
                 clients[clientAddress] = client_name
 
-
-    if login_cmd in msg[0:len(login_cmd)]:
+    elif login_cmd in msg[0:len(login_cmd)]:
         client_name = (msg.replace(login_cmd + ' ', '')).split(" ")[0]
         if is_client_name_taken(client_name):
             error_msg = "][Server] Sorry, that name is taken. Try another."
@@ -56,15 +55,13 @@ def processMessage(data, clientAddress):
             join_msg = '][Server] Welcome {}!'.format(client_name)
             unicast_msg(get_header(join_msg), join_msg, clientAddress)
             broadcast_msg(get_header(msg),"][Broadcast from: Server] " +str(client_name)+" has just come online!", clientAddress)
-    
-    if msg == exit_cmd:
+    elif msg == exit_cmd:
         print(f'{clients[clientAddress]} has disconnected ')
         unicast_msg(get_header(msg), '][Server] You are leaving the room...', clientAddress)
         client_name = clients[clientAddress]
         del clients[clientAddress]
         broadcast_msg(get_header(msg), "][Broadcast from: Server] " + str(client_name) + " has left the chat room!", clientAddress)
 
-    # are we unicasting or broadcasting
     elif '@' in msg[0]:
         try:
             recipient_name, msg = msg[1:].split(' ', 1)

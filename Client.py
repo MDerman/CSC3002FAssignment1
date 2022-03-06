@@ -15,12 +15,14 @@ import json
 
 
 def receive_messages_from_server():
-    while True:
-        global msgs_rec
+    global msgs_rec
+    while msgs_rec != -1:
+        
         global clientSocket
         bytesmessage = ""
         serverAddress = ""
         try:
+            clientSocket.settimeout(0.07)
             bytesmessage, serverAddress = clientSocket.recvfrom(bufferSize)
             # get header and message
             bytesmessage = str(base64.b64decode(bytesmessage))
@@ -29,21 +31,21 @@ def receive_messages_from_server():
             message = bytesmessage[:-1]
             header = json.loads((dictString.replace("'", "\"")))
             msgs_rec = msgs_rec + 1
-            
-            if message == '][Server] You are leaving the room...':
-                print("["+ (header.get("SentTime"))  + message)
-                print("You have left")
-                return False
-            elif  message != 'CONFIRMATION':
-                print("["+ (header.get("SentTime"))  + message)
-            else:
-                if len(messages_being_sent) > 0:
-                    for i in messages_being_sent:
-                        if header == messages_being_sent[i]:
-                            messages_received.append(header)
-                            messages_being_sent.pop(i)
-                        else:
-                            return False
+            if msgs_rec > 2:
+                if message == '][Server] You are leaving the room...':
+                    print("["+ (header.get("SentTime"))  + message)
+                    print("You have left")
+                    return False
+                elif  message != 'CONFIRMATION':
+                    print("["+ (header.get("SentTime"))  + message)
+                else:
+                    if len(messages_being_sent) > 0:
+                        for i in messages_being_sent:
+                            if header == messages_being_sent[i]:
+                                messages_received.append(header)
+                                messages_being_sent.pop(i)
+                            else:
+                                return False
         except:
             time.sleep(0.01)
 
@@ -94,32 +96,40 @@ if __name__ == "__main__":
     th.start()
     #Thread(target=send_messages, args=()).start()
 
-    msgs_rec = 0
-    time.sleep(1)
-    print(msgs_rec)
+    message = 'connection established'
+    header = get_header(message)
+    send_msg(message, address)
+    message = ""
+    time.sleep(0.03)
 
-    while True:
+    if msgs_rec ==2:
+        print("Welcome!")
+        while True:
 
-        if (messages_sent == 0):
-            message = input('Welcome to the chat!\nType \"/login\ '
-                            '[USERNAME]\" to login.\nType \"/exit\" to exit.\nUse @[USERNAME] to send a direct message.\n')
-            messages_sent += 1
-        else:
-            messages_sent += 1
-            message = input()
-        if message == exit_cmd:
-            header = get_header(message)
-            send_msg(message, address)
-            th.join()
-            sys.exit()
-        if message != "":
-            try:
+            if (messages_sent == 0):
+                message = input('Type \"/login\ ' + '[USERNAME]\" to login.\nType \"/exit\" to exit.\nUse @[USERNAME] to send a direct message.\n')
+                messages_sent += 1
+            else:
+                messages_sent += 1
+                message = input()
+            if message == exit_cmd:
                 header = get_header(message)
                 send_msg(message, address)
+                th.join()
+                sys.exit()
+            if message != "":
+                try:
+                    header = get_header(message)
+                    send_msg(message, address)
+                    message = ""
+                except:
+                    print("Chat server is offline. Message not sent.")
                 message = ""
-            except:
-                print("Chat server is offline. Message not sent.")
-            message = ""
+    else:
+        msgs_rec = -1
+        print("Unfortunately, you are unable to establish a connection with the server - please try again later")
+        th.join
+        sys.exit()
    
 
     
