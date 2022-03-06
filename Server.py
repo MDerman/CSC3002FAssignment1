@@ -1,4 +1,5 @@
 import base64
+import time
 from operator import truediv
 import sys
 from socket import *
@@ -41,26 +42,26 @@ def processMessage(data, clientAddress):
                 client_name = "Client " + str(len(clients))
                 clients[clientAddress] = client_name
             else:
-                unicast_msg(header, "][Server] Why leaving so soon?", clientAddress)
+                unicast_msg(header, "[Server] Why leaving so soon?", clientAddress)
                 client_name = "Client " + str(len(clients))
                 clients[clientAddress] = client_name
 
     elif login_cmd in msg[0:len(login_cmd)]:
         client_name = (msg.replace(login_cmd + ' ', '')).split(" ")[0]
         if is_client_name_taken(client_name):
-            error_msg = "][Server] Sorry, that name is taken. Try another."
+            error_msg = "[Server] Sorry, that name is taken. Try another."
             unicast_msg(get_header(error_msg), error_msg, clientAddress)
         else:
             clients[clientAddress] = client_name
-            join_msg = '][Server] Welcome {}!'.format(client_name)
+            join_msg = '[Server] Welcome {}!'.format(client_name)
             unicast_msg(get_header(join_msg), join_msg, clientAddress)
-            broadcast_msg(get_header(msg),"][Broadcast from: Server] " +str(client_name)+" has just come online!", clientAddress)
+            broadcast_msg(get_header(msg),"[Broadcast from: Server] " +str(client_name)+" has just come online!", clientAddress)
     elif msg == exit_cmd:
         print(f'{clients[clientAddress]} has disconnected ')
-        unicast_msg(get_header(msg), '][Server] You are leaving the room...', clientAddress)
+        unicast_msg(get_header(msg), '[Server] You are leaving the room...', clientAddress)
         client_name = clients[clientAddress]
         del clients[clientAddress]
-        broadcast_msg(get_header(msg), "][Broadcast from: Server] " + str(client_name) + " has left the chat room!", clientAddress)
+        broadcast_msg(get_header(msg), "[Broadcast from: Server] " + str(client_name) + " has left the chat room!", clientAddress)
 
     elif '@' in msg[0]:
         try:
@@ -74,14 +75,14 @@ def processMessage(data, clientAddress):
             print("An error occurred.")
 
         if recipient_exists(recipient_name):    
-            msg = "][Direct Message from: "+ clients[clientAddress] + "] " +msg
+            msg = "[Direct Message from: "+ clients[clientAddress] + "] " +msg
             unicast_msg(get_header(msg), msg, RecipientAddress)
             print(msg)
         else:
             msgs = "[Server] The user: "+ recipient_name +" does not exist"
             unicast_msg(get_header(msg), msgs, clientAddress)
     else:
-        msg = "][Broadcast from: "+ clients[clientAddress] + "] " +msg
+        msg = "[Broadcast from: "+ clients[clientAddress] + "] " +msg
         print(msg)
         broadcast_msg(get_header(msg), msg, clientAddress)
 
@@ -132,8 +133,11 @@ def unicast_msg(header, msg, client):
 
 def check_for_client_connections(serverSocket, bufferSize):
     while True:
-        msg, clientAddress = serverSocket.recvfrom(bufferSize)
-        processMessage(parse_message_from_client(msg, clientAddress), clientAddress)
+        try:
+            msg, clientAddress = serverSocket.recvfrom(bufferSize)
+            processMessage(parse_message_from_client(msg, clientAddress), clientAddress)
+        except:
+            time.sleep(0.1)
 
 if __name__ == "__main__":
 
