@@ -22,7 +22,7 @@ def receive_messages_from_server():
         bytesmessage = ""
         serverAddress = ""
         try:
-            clientSocket.settimeout(3)
+            clientSocket.settimeout(9999)
             bytesmessage, serverAddress = clientSocket.recvfrom(bufferSize)
             # get header and message
             bytesmessage = str(base64.b64decode(bytesmessage))
@@ -39,17 +39,16 @@ def receive_messages_from_server():
                 print("["+ (header.get("SentTime")) +"]" + message)
             else:
                 if len(arr_messages_pending) > 0:
-                    for i in arr_messages_pending:
-                        header_client = arr_messages_pending[i]
+                    for i in range(0, len(arr_messages_pending)):
+                        header_client = arr_messages_pending[i][0]
                         if (header["Sent"] == header_client["Sent"]) and (
                             header["Hash"] == header_client["Hash"]
                         ):
                             arr_messages_received.append(header)
-                            print(header)
+                            print("\x1B[3m(message received)")
                             arr_messages_pending.pop(i)
                         else:
                             return False
-
         except:
             time.sleep(0.01)
 
@@ -70,20 +69,22 @@ def create_bytes_msg(header, msg):
 
 def send_msg_with_header(header, msg, address):
     msgbytes = create_bytes_msg(header, msg)
-    arr_messages_pending.append((header, message))
     clientSocket.sendto(msgbytes, address)
 
 def send_msg(msg, address):
     global messages_sent
-    messages_sent += 1
     send_msg_with_header(get_header(msg), msg, address)
 
 def send_messages():
-    time.sleep(0.5)
-    # for i in range(0, 5):
-    #     if len(arr_messages_pending) > 0:
-    #         send_msg(arr_messages_pending[0][1], address)
-    #         arr_messages_pending.pop()
+    if len(arr_messages_pending) > 0:
+        time.sleep(0.1)
+        for i in range(0,len(arr_messages_pending), 1):
+              if len(arr_messages_pending) > 0:
+                 global messages_sent
+                 msg = arr_messages_pending[i][1]
+                 head = arr_messages_pending[i][0]
+                 head["Type"] = "C" #possibility of using a different type here...
+                 send_msg_with_header(head, msg, address)
 
 if __name__ == "__main__":
 
@@ -108,11 +109,10 @@ if __name__ == "__main__":
     message = 'connection established'
     header = get_header(message)
     send_msg(message, address)
-
-    arr_messages_pending.pop()
     print("Welcome!")
     while True:
-
+        # now we try to send messages that have not been received by the server
+        send_messages()
         if (messages_sent == 1):
             message = input('Type \"/login\ ' + '[USERNAME]\" to login.\nType \"/exit\" to exit.\nUse @[USERNAME] to send a direct message.\n')
         else:
@@ -121,16 +121,16 @@ if __name__ == "__main__":
             header = get_header(message)
             send_msg(message, address)
             receive_thread.join()
-            #send_msg_thread.join()
             sys.exit()
         if message != "":
             try:
                 header = get_header(message)
+                arr_messages_pending.append((header, message))
+                messages_sent += 1
                 send_msg(message, address)
             except:
                 print("Chat server is offline. Message not sent.")
-        # now we try to send messages that have not been received by the server
-        send_messages()
+
     #else:
         # msgs_rec = -1
         # print("Unfortunately, you are unable to establish a connection with the server - please try again later")

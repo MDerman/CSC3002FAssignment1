@@ -1,5 +1,5 @@
-tests, add sending thread, print all users, ordered messages
-what should we do when order is not correct
+tests
+esrver not printing first message from a client sometimes
 
 # CSC3002FAssignment1
 _**This is CLI chat application using UDP with unicast, broadcast and login functionality. 
