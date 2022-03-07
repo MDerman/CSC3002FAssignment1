@@ -113,7 +113,7 @@ if __name__ == "__main__":
     while True:
         # now we try to send messages that have not been received by the server
         send_messages()
-        if (messages_sent == 1):
+        if (messages_sent == 0):
             message = input('Type \"/login\ ' + '[USERNAME]\" to login.\nType \"/exit\" to exit.\nUse @[USERNAME] to send a direct message.\n')
         else:
             message = input()

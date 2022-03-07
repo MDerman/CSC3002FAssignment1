@@ -99,7 +99,6 @@ def parse_message_from_client(bytesmessage, client):
     msg = bytesmessage[:-1]
     header = json.loads((dictString.replace("'", "\"")))
 
-
     #if (header["Type"] == "R"):
     #    print("received")
     ##now we check if this message has been received in the right order
