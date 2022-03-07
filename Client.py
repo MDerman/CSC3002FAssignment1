@@ -22,7 +22,7 @@ def receive_messages_from_server():
         bytesmessage = ""
         serverAddress = ""
         try:
-            clientSocket.settimeout(0.07)
+            clientSocket.settimeout(3)
             bytesmessage, serverAddress = clientSocket.recvfrom(bufferSize)
             # get header and message
             bytesmessage = str(base64.b64decode(bytesmessage))
@@ -31,21 +31,24 @@ def receive_messages_from_server():
             message = bytesmessage[:-1]
             header = json.loads((dictString.replace("'", "\"")))
             msgs_rec = msgs_rec + 1
-            if msgs_rec > 2:
-                if message == '[Server] You are leaving the room...':
-                    print("["+ (header.get("SentTime"))  + message)
-                    print("You have left")
-                    return False
-                elif message != 'CONFIRMATION':
-                    print("["+ (header.get("SentTime"))  + message)
-                else:
-                    if len(arr_messages_to_send) > 0:
-                        for i in arr_messages_to_send:
-                            if header == arr_messages_to_send[i]:
-                                arr_messages_received.append(header)
-                                arr_messages_to_send.pop(i)
-                            else:
-                                return False
+            if message == '[Server] You are leaving the room...':
+                print("["+ (header.get("SentTime"))  + "]" + message)
+                print("You have left")
+                return False
+            elif header["Type"] != "C":
+                print("["+ (header.get("SentTime")) +"]" + message)
+            else:
+                if len(arr_messages_pending) > 0:
+                    for i in arr_messages_pending:
+                        header_client = arr_messages_pending[i]
+                        if (header["Sent"] == header_client["Sent"]) and (
+                            header["Hash"] == header_client["Hash"]
+                        ):
+                            arr_messages_received.append(header)
+                            print(header)
+                            arr_messages_pending.pop(i)
+                        else:
+                            return False
 
         except:
             time.sleep(0.01)
@@ -54,8 +57,10 @@ def get_header(msg):
     time = datetime.now()
     hash = int(hashlib.sha256(msg.encode('utf-8')).hexdigest(), 16) % 10 ** 8
     header = {
-        "SentTime": time.strftime("%m/%d/%Y, %H:%M"),
-        "Hash": hash
+        "Sent": time.strftime("%m/%d/%Y, %H:%M"),
+        "Hash": hash,
+        "Type" : "M",
+        "Num" : messages_sent
     }
     return header
 
@@ -65,23 +70,25 @@ def create_bytes_msg(header, msg):
 
 def send_msg_with_header(header, msg, address):
     msgbytes = create_bytes_msg(header, msg)
-    arr_messages_to_send.append((header, message))
+    arr_messages_pending.append((header, message))
     clientSocket.sendto(msgbytes, address)
 
 def send_msg(msg, address):
+    global messages_sent
+    messages_sent += 1
     send_msg_with_header(get_header(msg), msg, address)
 
 def send_messages():
     time.sleep(0.5)
-    for i in range(0, 5):
-        if len(arr_messages_to_send) > 0:
-            send_msg(arr_messages_to_send[0][1], address)
-            arr_messages_to_send.pop()
+    # for i in range(0, 5):
+    #     if len(arr_messages_pending) > 0:
+    #         send_msg(arr_messages_pending[0][1], address)
+    #         arr_messages_pending.pop()
 
 if __name__ == "__main__":
 
     global msgs_rec
-    arr_messages_to_send = []
+    arr_messages_pending = []
     arr_messages_received = []
     msgs_rec = 0
 
@@ -101,41 +108,35 @@ if __name__ == "__main__":
     message = 'connection established'
     header = get_header(message)
     send_msg(message, address)
-    message = ""
-    time.sleep(0.06)
 
-    if msgs_rec == 2:
-        #here
-        arr_messages_to_send.pop()
-        print("Welcome!")
-        while True:
+    arr_messages_pending.pop()
+    print("Welcome!")
+    while True:
 
-            if (messages_sent == 0):
-                message = input('Type \"/login\ ' + '[USERNAME]\" to login.\nType \"/exit\" to exit.\nUse @[USERNAME] to send a direct message.\n')
-                messages_sent += 1
-            else:
-                messages_sent += 1
-                message = input()
-            if message == exit_cmd:
+        if (messages_sent == 1):
+            message = input('Type \"/login\ ' + '[USERNAME]\" to login.\nType \"/exit\" to exit.\nUse @[USERNAME] to send a direct message.\n')
+        else:
+            message = input()
+        if message == exit_cmd:
+            header = get_header(message)
+            send_msg(message, address)
+            receive_thread.join()
+            #send_msg_thread.join()
+            sys.exit()
+        if message != "":
+            try:
                 header = get_header(message)
                 send_msg(message, address)
-                receive_thread.join()
-                #send_msg_thread.join()
-                sys.exit()
-            if message != "":
-                try:
-                    header = get_header(message)
-                    send_msg(message, address)
-                except:
-                    print("Chat server is offline. Message not sent.")
-            # now we try to send messages that have not been received by the server
-            send_messages()
-    else:
-        msgs_rec = -1
-        print("Unfortunately, you are unable to establish a connection with the server - please try again later")
-        receive_thread.join
-        #send_msg_thread.join
-        sys.exit()
-   
+            except:
+                print("Chat server is offline. Message not sent.")
+        # now we try to send messages that have not been received by the server
+        send_messages()
+    #else:
+        # msgs_rec = -1
+        # print("Unfortunately, you are unable to establish a connection with the server - please try again later")
+        # receive_thread.join
+        # #send_msg_thread.join
+        # sys.exit()
+        #
 
     

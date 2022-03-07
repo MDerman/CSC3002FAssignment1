@@ -13,19 +13,22 @@ def get_header(msg):
     hash = int(hashlib.sha256(msg.encode('utf-8')).hexdigest(), 16) % 10 ** 8
     header = {
         "SentTime": time.strftime("%m/%d/%Y, %H:%M"),
-        "Hash": hash
+        "Hash": hash,
+        "Type" : "M",
+        "Num": -1
+
     }
     return header
 
 def is_client_name_taken(client_name):
-    global clients
-    for client in clients.values():
+    global clients_dict
+    for client in clients_dict.values():
         if client == client_name:
             return True
     return False
 
 def get_address_from_client_name(client_name):
-    for client_tuple in clients.items():
+    for client_tuple in clients_dict.items():
         if client_tuple[1] == client_name:
             return client_tuple[0]
     return None
@@ -35,16 +38,16 @@ def processMessage(data, clientAddress):
     header = data[0]
 
   
-    if clientAddress not in clients.keys():
+    if clientAddress not in clients_dict.keys():
         if (login_cmd not in msg[0:len(login_cmd)]):
             if (msg != exit_cmd):
                 unicast_msg(header, "[Server] Don't forget to login to receive direct messages!", clientAddress)
-                client_name = "Client " + str(len(clients))
-                clients[clientAddress] = client_name
+                client_name = "Client " + str(len(clients_dict))
+                clients_dict[clientAddress] = client_name
             else:
                 unicast_msg(header, "[Server] Why leaving so soon?", clientAddress)
-                client_name = "Client " + str(len(clients))
-                clients[clientAddress] = client_name
+                client_name = "Client " + str(len(clients_dict))
+                clients_dict[clientAddress] = client_name
 
     elif login_cmd in msg[0:len(login_cmd)]:
         client_name = (msg.replace(login_cmd + ' ', '')).split(" ")[0]
@@ -52,15 +55,19 @@ def processMessage(data, clientAddress):
             error_msg = "[Server] Sorry, that name is taken. Try another."
             unicast_msg(get_header(error_msg), error_msg, clientAddress)
         else:
-            clients[clientAddress] = client_name
+            clients_dict[clientAddress] = client_name
             join_msg = '[Server] Welcome {}!'.format(client_name)
             unicast_msg(get_header(join_msg), join_msg, clientAddress)
             broadcast_msg(get_header(msg),"[Broadcast from: Server] " +str(client_name)+" has just come online!", clientAddress)
     elif msg == exit_cmd:
-        print(f'{clients[clientAddress]} has disconnected ')
+        print(f'{clients_dict[clientAddress]} has disconnected ')
         unicast_msg(get_header(msg), '[Server] You are leaving the room...', clientAddress)
-        client_name = clients[clientAddress]
-        del clients[clientAddress]
+        client_name = clients_dict[clientAddress]
+        del clients_dict[clientAddress]
+        global c
+        for i in range(0,arr_client_ordering):
+            if arr_client_ordering[i][0] == clientAddress:
+                del arr_client_ordering[i]
         broadcast_msg(get_header(msg), "[Broadcast from: Server] " + str(client_name) + " has left the chat room!", clientAddress)
 
     elif '@' in msg[0]:
@@ -75,14 +82,14 @@ def processMessage(data, clientAddress):
             print("An error occurred.")
 
         if recipient_exists(recipient_name):    
-            msg = "[Direct Message from: "+ clients[clientAddress] + "] " +msg
+            msg = "[Direct Message from: " + clients_dict[clientAddress] + "] " + msg
             unicast_msg(get_header(msg), msg, RecipientAddress)
             print(msg)
         else:
             msgs = "[Server] The user: "+ recipient_name +" does not exist"
             unicast_msg(get_header(msg), msgs, clientAddress)
     else:
-        msg = "[Broadcast from: "+ clients[clientAddress] + "] " +msg
+        msg = "[Broadcast from: " + clients_dict[clientAddress] + "] " + msg
         print(msg)
         broadcast_msg(get_header(msg), msg, clientAddress)
 
@@ -93,6 +100,22 @@ def parse_message_from_client(bytesmessage, client):
     dictString = dictString[2:]
     msg = bytesmessage[:-1]
     header = json.loads((dictString.replace("'", "\"")))
+    #now we check if this message has been received in the right order
+    message_number = header["Num"]
+    exists = False
+    for i in arr_client_ordering:
+        if i[0] == client:
+            t = i[1]
+            t += 1
+            stored_msg_num = t
+            i = (client, t)
+            exists = True
+    if not exists:
+        arr_client_ordering.append((client, 1))
+        stored_msg_num = 1
+    if message_number == stored_msg_num:
+        print("right order")
+        #print message received in wrong order?
 
     #now we confirm
     send_confirmation_message(msg, header, client)
@@ -104,7 +127,8 @@ def parse_message_from_client(bytesmessage, client):
 def send_confirmation_message(msg, header, client):
     hash = int(hashlib.sha256(msg.encode('utf-8')).hexdigest(), 16) % 10 ** 8
     header["Hash"] = hash
-    msgbytes = (str(header) + "<END>" + "CONFIRMATION")
+    header["Type"] = "C"
+    msgbytes = (str(header) + "<END>")
     msgbytes = base64.b64encode(msgbytes.encode('ascii'))
     serverSocket.sendto(msgbytes, client)
 
@@ -123,7 +147,7 @@ def broadcast_msg(header, msg, clientAddress):
     #here I use clientAddress to be the one who sent the message to be broadcast
     #or the one user who doesn't need to see the broadcast - so this is technically
     #not used a "true broadcast"
-    for client in clients:
+    for client in clients_dict:
         if (clientAddress != client):
             unicast_msg(header, msg, client)
 
@@ -133,15 +157,16 @@ def unicast_msg(header, msg, client):
 
 def check_for_client_connections(serverSocket, bufferSize):
     while True:
-        try:
+        #try:
             msg, clientAddress = serverSocket.recvfrom(bufferSize)
             processMessage(parse_message_from_client(msg, clientAddress), clientAddress)
-        except:
-            time.sleep(0.1)
+        # except:
+        #     time.sleep(0.1)
 
 if __name__ == "__main__":
 
-    clients = {}
+    arr_client_ordering = []
+    clients_dict = {}
     receivedMessages = []
     port = 13370
     bufferSize = 2048
