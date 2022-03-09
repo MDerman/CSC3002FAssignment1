@@ -8,6 +8,20 @@ import json
 from datetime import datetime
 import hashlib
 
+"""
+Description:
+    Function that is used to create and return the header for a specific message
+
+Parameters:
+    String: msg   //This is the message from which the header is created
+
+Return:
+    A header data struct with the following attriutes:
+        Sent   //Time message was sent
+        Hash   //Hash value for the message
+        Type   //Type of message, whether it is for confirmation or is to be printed by recipient
+        Num    //Chronological ID of the message sent
+"""
 def get_header(msg):
     time = datetime.now()
     hash = int(hashlib.sha256(msg.encode('utf-8')).hexdigest(), 16) % 10 ** 8
@@ -19,6 +33,17 @@ def get_header(msg):
     }
     return header
 
+
+"""
+Description:
+    Function that checks to see if a specified client name has alrerady been used
+
+Parameters:
+    String: client_name
+
+Returns:
+    Boolean  //whether or not the name has been taken
+"""
 def is_client_name_taken(client_name):
     global clients_dict
     for client in clients_dict.values():
@@ -26,12 +51,43 @@ def is_client_name_taken(client_name):
             return True
     return False
 
+
+"""
+Description:
+    Function that returns the address of a specified client
+
+Parameters:
+    Client name
+
+Returns:
+    Address Object
+"""
 def get_address_from_client_name(client_name):
     for client_tuple in clients_dict.items():
         if client_tuple[1] == client_name:
             return client_tuple[0]
     return None
 
+
+"""
+Description:
+    Function that receives message data and a client address
+    And then based on the information, it decides the correct mode of operation
+    such as to broadcast or unicast the message, throw an error or intiate a client to disconnect 
+
+How it works:
+    Checks to see if the client in the message exists and executes necessary response
+    Checks to see if it is a login instruction and executes necessary response
+    Checks to see if is is an exit command and executes necessary response
+    Checks to see if it is a direct or broadcast message and executes necessary response
+
+Parameters:
+    Data Object: data
+    Address Object: clientAddress
+
+Return:
+    An error in special circumstances
+"""
 def processMessage(data, clientAddress):
     msg = data[1]
     header = data[0]
@@ -91,6 +147,21 @@ def processMessage(data, clientAddress):
         msg = "[Broadcast from: " + clients_dict[clientAddress] + "] " + msg
         broadcast_msg(get_header(msg), msg, clientAddress)
 
+
+"""
+Description:
+    Function that decodes a sequence of bytes into the original message and header
+    And sends a confirmation message to the client to validate the message received
+    Before finally returning the header and message decoded from the byte sequence
+
+Parameters:
+    bytes: bytemessage
+    Client Object: client
+
+Returns:
+    Header Struct: header
+    String: msg
+"""
 def parse_message_from_client(bytesmessage, client):
     #get header and message
     bytesmessage = str(base64.b64decode(bytesmessage))
@@ -125,6 +196,21 @@ def parse_message_from_client(bytesmessage, client):
     receivedMessages.append(header)
     return header, msg
 
+
+"""
+Description:
+    Function that takes the received message, header and client object and then 
+    decodes this data before sending it to the client to validate that the message received 
+    has not been corrupted
+
+Parameters:
+    Header Struct: header
+    Client Object: client
+    String: msg
+
+Returns:
+    None - Void
+"""
 def send_confirmation_message(msg, header, client):
     hash = int(hashlib.sha256(msg.encode('utf-8')).hexdigest(), 16) % 10 ** 8
     header["Hash"] = hash
@@ -133,29 +219,93 @@ def send_confirmation_message(msg, header, client):
     msgbytes = base64.b64encode(msgbytes.encode('ascii'))
     serverSocket.sendto(msgbytes, client)
 
+
+"""
+Description:
+    Function that takes a header struct and message string and converts it into a bytes sequence
+    before returning the byte sequence
+
+Parameters:
+    Header Struct: header
+    String: msg
+
+Returns:
+    byte sequencee: msgbytes
+"""
 def make_message(header, msg):
     msgbytes = (str(header) + "<END>" + msg)
     msgbytes = base64.b64encode(msgbytes.encode('ascii'))
     return msgbytes
 
+
+"""
+Description:
+    Function that checks to see if a specified recipient exists
+    and returns the necessary response
+
+Parameters:
+    String: name
+
+Returns:
+    boolean   //true if the client exists
+"""
 def recipient_exists(name):
     if is_client_name_taken(name):
         return True
     else:
         return False
 
+
+"""
+Description:
+    Function that takes a header struct, message and senders address
+    and then proceeds to broadcast the message by calling the unicast function to all other members
+
+Parameters:
+    Header Struct: header
+    String: msg
+    Address Object: clientAddress
+
+Returns:
+    None
+"""
 def broadcast_msg(header, msg, clientAddress):
-    #here I use clientAddress to be the one who sent the message to be broadcast
-    #or the one user who doesn't need to see the broadcast - so this is technically
-    #not used a "true broadcast"
+    #here we use clientAddress to be the one who sent the message to be broadcast
     for client in clients_dict:
         if (clientAddress != client):
             unicast_msg(header, msg, client)
 
+
+"""
+Description:
+    Function that turns the message into a byte squence and then
+    sends the message to the specified client
+
+Parameters:
+    Header Struct: header
+    String: msg
+    Client Object: client
+
+Returns:
+    None
+"""
 def unicast_msg(header, msg, client):
     bytesmsg = make_message(header, msg)
     serverSocket.sendto(bytesmsg, client)
 
+
+"""
+Description:    
+    Function that continuously loops and waits for a message to arrive at the server socket
+    before calling a function to parse any received message to execute the correct operation
+
+Paraneters:
+    socket: serverSocket
+    int: bufferSize
+
+Returns:
+    None
+"""
 def check_for_client_connections(serverSocket, bufferSize):
     while True:
         #try:
@@ -164,6 +314,18 @@ def check_for_client_connections(serverSocket, bufferSize):
         # except:
         #     time.sleep(0.1)
 
+
+"""
+Description:
+    Main method that instantiates the server and declares all necessary variables for operation
+    Calls function to listen at the server socket for any incoming messages from clients
+
+Parameters:
+    None
+
+Returns:
+    None
+"""
 if __name__ == "__main__":
 
     arr_client_ordering = []
