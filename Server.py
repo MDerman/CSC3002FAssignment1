@@ -276,6 +276,7 @@ def broadcast_msg(header, msg, clientAddress):
             unicast_msg(header, msg, client)
 
 
+
 """
 Description:
     Function that turns the message into a byte squence and then
@@ -290,8 +291,11 @@ Returns:
     None
 """
 def unicast_msg(header, msg, client):
-    bytesmsg = make_message(header, msg)
-    serverSocket.sendto(bytesmsg, client)
+    try:
+        bytesmsg = make_message(header, msg)
+        serverSocket.sendto(bytesmsg, client)
+    except:
+        pass
 
 
 """

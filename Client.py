@@ -113,7 +113,6 @@ def create_bytes_msg(header, msg):
     msgbytes = (str(header) + "<END>" + msg)
     return base64.b64encode(msgbytes.encode('ascii'))
 
-
 """
 Description:
     Function that accumulates the header, msg and address information and 
@@ -127,6 +126,7 @@ Parameters:
 Return
     None/Void
 """
+
 def send_msg_with_header(header, msg, address):
     msgbytes = create_bytes_msg(header, msg)
     clientSocket.sendto(msgbytes, address)
@@ -139,7 +139,7 @@ Description:
 
 Parameters:
     String: msg
-    Adress Object: address
+    Address Object: address
 
 Return
     None/Void
@@ -254,11 +254,3 @@ if __name__ == "__main__":
             send_msg(message, address)
             offline_check_thread = Thread(target=is_offline, args=(msgtuple,))
             offline_check_thread.start()
-
-    # else:
-        # msgs_rec = -1
-        # print("Unfortunately, you are unable to establish a connection with the server - please try again later")
-        # receive_thread.join
-        # #send_msg_thread.join
-        # sys.exit()
-        #
