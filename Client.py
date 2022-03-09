@@ -8,7 +8,6 @@ from socket import *
 from threading import Thread, Lock
 import json
 
-
 """
 Description: 
     Function that loops while the client is online and listens for any messages sent to the client socket.
@@ -32,6 +31,7 @@ Parameters:
 Return:
     None
 """
+
 def receive_messages_from_server():
     global msgs_rec
     while msgs_rec != -1:
@@ -67,8 +67,7 @@ def receive_messages_from_server():
                             arr_messages_received.append(header)
                             print("\x1B[3m(message received)")
                             arr_messages_pending.pop(i)
-                        else:
-                            return False
+
         except:
             time.sleep(0.01)
 
@@ -81,7 +80,7 @@ Parameters:
     String: msg   //This is the message from which the header is created
 
 Return:
-    A header data struct with the following attriutes:
+    A header data struct with the following attributes:
         Sent   //Time message was sent
         Hash   //Hash value for the message
         Type   //Type of message, whether it is for confirmation or is to be printed by recipient
@@ -123,7 +122,7 @@ Description:
 Parameters:
     Header Struct: header
     String: msg
-    Adress Object: address
+    Address Object: address
 
 Return
     None/Void
@@ -174,6 +173,21 @@ def send_messages():
                 head["Type"] = "C"
                 send_msg_with_header(head, msg, address)
 
+"""
+Description:
+    Function that checks to see if the latest message was received by the server and displays if it hasn't to the user.
+
+Parameters:
+    msgtuple, tuple that identifies an entry in arr_messages_pending
+
+Return:
+    None
+"""
+
+def is_offline(msgtuple):
+    time.sleep(1.5)
+    if msgtuple in arr_messages_pending:
+        print("\x1B[3mThe server is offline. Message not delivered.")
 
 """
 Description:
@@ -210,8 +224,6 @@ if __name__ == "__main__":
     messages_sent = 0
     receive_thread = Thread(target=receive_messages_from_server, args=())
     receive_thread.start()
-    #send_msg_thread = Thread(target=send_messages, args=())
-    # send_msg_thread.start()
 
     message = 'connection established'
     header = get_header(message)
@@ -225,19 +237,23 @@ if __name__ == "__main__":
                 'Type \"/login\ ' + '[USERNAME]\" to login.\nType \"/exit\" to exit.\nUse @[USERNAME] to send a direct message.\n')
         else:
             message = input()
+            try:
+                offline_check_thread.join()
+            except:
+                pass
         if message == exit_cmd:
             header = get_header(message)
             send_msg(message, address)
             receive_thread.join()
             sys.exit()
         if message != "":
-            try:
-                header = get_header(message)
-                arr_messages_pending.append((header, message))
-                messages_sent += 1
-                send_msg(message, address)
-            except:
-                print("Chat server is offline. Message not sent.")
+            header = get_header(message)
+            msgtuple = (header, message)
+            arr_messages_pending.append(msgtuple)
+            messages_sent += 1
+            send_msg(message, address)
+            offline_check_thread = Thread(target=is_offline, args=(msgtuple,))
+            offline_check_thread.start()
 
     # else:
         # msgs_rec = -1
